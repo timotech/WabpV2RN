@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import Colors from "../shared/constants/Colors";
-import React from "react";
+import { Colors } from "../shared";
+import React, { useState } from "react";
 import {
   FlatList,
   Platform,
@@ -9,10 +9,22 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
+import Tabs from "./Tabs";
 import Review from "./Review";
 
-export default class AdditionalInfo extends React.PureComponent {
+const categoriesData = [
+  {
+    id: 1,
+    categoryName: "Info",
+  },
+  {
+    id: 2,
+    categoryName: "Reviews",
+  },
+];
+
+const AdditionalInfo = (props) => {
+  const [selectCatg, setSelectCatg] = useState(1);
   _keyExtractor = (item, index) => `${index}`;
 
   _renderItem = ({ item }) => (
@@ -20,33 +32,26 @@ export default class AdditionalInfo extends React.PureComponent {
   );
 
   _showModal = () => {
-    this.props.setModalVisible(true);
+    props.setModalVisible(true);
   };
 
-  render() {
-    const { description, reviews } = this.props;
+  const { description, reviews } = props;
 
-    return (
-      <View style={styles.moreInfo}>
-        {/* <Tabs
-          tabBarBackgroundColor={Colors.snow}
-          renderTabBar={() => <ScrollableTab style={{ borderWidth: 0 }} />}
-          tabBarUnderlineStyle={{
-            borderBottomWidth: 4,
-            borderBottomColor: Colors.blueViolet,
-          }}
-          style={{
-            justifyContent: "flex-start",
-            alignItems: "flex-start",
-          }}
-        > */}
-        {/* <Tab
-            heading="Info"
-            tabStyle={styles.tabStyle}
-            textStyle={styles.tabTextStyle}
-            activeTabStyle={styles.tabStyle}
-            activeTextStyle={styles.tabTextStyle}
-          >
+  const getSelectedCategory = (index) => {
+    setSelectCatg(index);
+  };
+
+  return (
+    <View style={styles.moreInfo}>
+      <Tabs Data={categoriesData} onSelected={getSelectedCategory} />
+      <View
+        style={{
+          justifyContent: "flex-start",
+          alignItems: "flex-start",
+        }}
+      >
+        {selectCatg == 1 && (
+          <View style={styles.tabStyle}>
             <View style={styles.tabContent}>
               <Text
                 numberOfLines={10}
@@ -56,46 +61,40 @@ export default class AdditionalInfo extends React.PureComponent {
                 {description}
               </Text>
             </View>
-          </Tab> */}
-        {/* <Tab
-            heading="Reviews"
-            tabStyle={styles.tabStyle}
-            textStyle={styles.tabTextStyle}
-            activeTabStyle={styles.tabStyle}
-            activeTextStyle={styles.tabTextStyle}
-          >
+          </View>
+        )}
+        {selectCatg == 2 && (
+          <View style={styles.tabStyle}>
             <View style={[styles.tabContent, styles.reviewsContent]}>
               {/** Floating action button */}
-        {/* <TouchableOpacity style={styles.add} onPress={this._showModal}>
+              <TouchableOpacity style={styles.add} onPress={this._showModal}>
                 <Feather name="plus" size={30} color={Colors.titanWhite} />
-              </TouchableOpacity> */}
-
-        {/** Reviews goes here */}
-
-        {/* <FlatList
+              </TouchableOpacity>
+              {/** Reviews goes here */}
+              <FlatList
                 data={reviews}
-                keyExtractor={this._keyExtractor}
-                renderItem={this._renderItem}
+                keyExtractor={_keyExtractor}
+                renderItem={_renderItem}
                 removeClippedSubviews={false}
-              /> */}
-        {/* ) : (
-                <View
-                  style={{
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginTop: 20,
-                  }}
-                >
-                  <Text>No reviews yet! Be the first to put one</Text>
-                </View>
-              )} */}
-        {/* </View>
-          </Tab>
-        </Tabs> */}
+              />
+              ) : (
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: 20,
+                }}
+              >
+                <Text>No reviews yet! Be the first to put one</Text>
+              </View>
+              )
+            </View>
+          </View>
+        )}
       </View>
-    );
-  }
-}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   moreInfo: {
@@ -157,3 +156,5 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+export default AdditionalInfo;

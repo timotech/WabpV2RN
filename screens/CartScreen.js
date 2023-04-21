@@ -232,8 +232,8 @@ export default class CartScreen extends Component {
                 showPayButton={true}
                 paystackKey="pk_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
                 amount={this.state.total}
-                billingEmail="info@wabp.com.ng"
-                billingMobile="08156934858"
+                billingEmail="xxxxxxxxxxxxx"
+                billingMobile="xxxxxxxxxx"
                 billingName="West African Book Publishers ltd"
                 ActivityIndicatorColor="green"
                 SafeAreaViewContainer={{ marginTop: 15 }}
