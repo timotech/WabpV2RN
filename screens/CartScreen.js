@@ -226,24 +226,11 @@ export default class CartScreen extends Component {
               </View>
             </ScrollView>
 
-            {/* <Touchable
-              background={Touchable.Ripple(Colors.titanWhite, false)}
-              style={styles.cartFooter}
-              onPress={() => {
-                this.props.navigation.navigate("Checkout");
-              }}
-            >
-              <Text style={styles.checkoutText}>Proceed to Checkout</Text>
-            </Touchable> 
-            pk_test_24570dcf91d593bfe85181a1ed6803072730f4d0
-            pk_live_95ec196686547904f2327384af3b27a4165e4c8f
-            */}
-
             <View style={styles.cartFooter}>
               <PaystackWebView
                 buttonText="Pay Now"
                 showPayButton={true}
-                paystackKey="pk_live_95ec196686547904f2327384af3b27a4165e4c8f"
+                paystackKey="pk_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
                 amount={this.state.total}
                 billingEmail="info@wabp.com.ng"
                 billingMobile="08156934858"
