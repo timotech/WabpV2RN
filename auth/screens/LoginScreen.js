@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors, Touchable } from "../../shared";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Platform,
   ScrollView,
@@ -19,7 +20,147 @@ const LoginScreen = (props) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isDisabled, setIsDisabled] = useState(false);
+  //const [isDisabled, setIsDisabled] = useState(false);
+  const { navigation } = props;
+
+  _signin = async () => {
+    if (username == "" || password == "") {
+      alert("Please supply both username and password!");
+      return;
+    }
+
+    setIsLoading(true);
+    Keyboard.dismiss();
+
+    await fetch("https://books.timotech.com.ng/api/auth/login", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        Email: username,
+        Password: password,
+      }),
+    })
+      .then((res) => res.json())
+      .then(
+        (responseJson) => {
+          if (responseJson.isSuccess == true) {
+            setIsLoading(false);
+            AsyncStorage.setItem(
+              "authtoken",
+              JSON.stringify(responseJson.message)
+            );
+            AsyncStorage.setItem(
+              "firstname",
+              JSON.stringify(responseJson.firstname)
+            );
+            AsyncStorage.setItem(
+              "lastname",
+              JSON.stringify(responseJson.lastname)
+            );
+            AsyncStorage.setItem("email", JSON.stringify(responseJson.email));
+
+            navigation.navigate("App");
+          } else {
+            setIsLoading(false);
+            alert("Invalid username or password, please try again");
+          }
+        },
+        (error) => {
+          setIsLoading(false);
+          alert(
+            "A server error has occured: " + error + ". Please try again later"
+          );
+        }
+      );
+  };
+
+  _facebookSignin = async () => {
+    setIsLoading(true);
+    try {
+      await Facebook.initializeAsync({
+        appId: "3764647870245351",
+      });
+      const { type, token } = await Facebook.logInWithReadPermissionsAsync({
+        permissions: ["public_profile"],
+      });
+
+      if (type === "success") {
+        // Get the user's name using Facebook's Graph API
+        const response = await fetch(
+          `https://graph.facebook.com/me?access_token=${token}`
+        );
+
+        _socialSignin(token);
+      } else {
+        // type === 'cancel'
+      }
+    } catch ({ message }) {
+      setIsLoading(false);
+      alert(`Facebook Login Error: ${message}`);
+    }
+  };
+
+  signInWithGoogleAsync = async () => {
+    try {
+      const result = await Google.logInAsync({
+        androidClientId:
+          "837171953151-ibk8kqu0kodsdjs3ac4v23bf4tci7911.apps.googleusercontent.com",
+        //iosClientId: YOUR_CLIENT_ID_HERE,
+        scopes: ["profile", "email"],
+      });
+
+      if (result.type === "success") {
+        return result.accessToken;
+      } else {
+        return { cancelled: true };
+      }
+    } catch (e) {
+      return { error: true };
+    }
+  };
+
+  _socialSignin = async (token) => {
+    const url = `https://books.timotech.com.ng/api/auth/loginfacebook?token=${token}`;
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: "*/*",
+      },
+    })
+      .then((res) => res.json())
+      .then(
+        (responseJson) => {
+          if (responseJson.isSuccess == true) {
+            setIsLoading(false);
+            AsyncStorage.setItem(
+              "authtoken",
+              JSON.stringify(responseJson.message)
+            );
+            AsyncStorage.setItem(
+              "firstname",
+              JSON.stringify(responseJson.firstname)
+            );
+            AsyncStorage.setItem(
+              "lastname",
+              JSON.stringify(responseJson.lastname)
+            );
+            AsyncStorage.setItem("email", JSON.stringify(responseJson.email));
+
+            navigation.navigate("App");
+          } else {
+            setIsLoading(false);
+            alert("Incorrect Facebook Login");
+          }
+        },
+        (error) => {
+          setIsLoading(false);
+          alert(error);
+        }
+      );
+  };
 
   return (
     <ImageBackground
@@ -74,7 +215,7 @@ const LoginScreen = (props) => {
                 </Button> */}
               <TouchableOpacity
                 style={{ flexDirection: "row", alignItems: "center" }}
-                onPress={() => _facebookSignin}
+                onPress={_facebookSignin}
               >
                 <FontAwesome name="facebook" size={30} color="blue" />
                 <Text style={styles.socialText}>Facebook</Text>
@@ -110,9 +251,7 @@ const LoginScreen = (props) => {
             {/** Form after */}
             <View style={styles.formAfter}>
               <Text style={styles.formAfterText}>Don't have an account?</Text>
-              <TouchableOpacity
-                onPress={() => props.navigation.navigate("Register")}
-              >
+              <TouchableOpacity onPress={() => navigation.navigate("Register")}>
                 <Text
                   style={[
                     styles.formAfterText,
@@ -130,7 +269,7 @@ const LoginScreen = (props) => {
             <View style={styles.formAfter}>
               <Text style={styles.formAfterText}>Forgot your password?</Text>
               <TouchableOpacity
-                onPress={() => props.navigation.navigate("ForgotPassword")}
+                onPress={() => navigation.navigate("ForgotPassword")}
               >
                 <Text
                   style={[
@@ -154,9 +293,7 @@ const LoginScreen = (props) => {
                 alignItems: "center",
               }}
             >
-              <TouchableOpacity
-                onPress={() => props.navigation.navigate("App")}
-              >
+              <TouchableOpacity onPress={() => navigation.navigate("App")}>
                 <Text style={{ color: Colors.titanWhite, fontSize: 14 }}>
                   I just want to{" "}
                   <Text
@@ -172,22 +309,26 @@ const LoginScreen = (props) => {
               </TouchableOpacity>
             </View>
             <View style={{ marginTop: 20 }}>
-              <ActivityIndicator
-                size="large"
-                color="#00ff00"
-                animating={isLoading}
-              />
+              {isLoading && (
+                <ActivityIndicator
+                  size="large"
+                  color="#00ff00"
+                  animating={isLoading}
+                />
+              )}
             </View>
           </View>
         </ScrollView>
       </View>
-      <Touchable
-        background={Touchable.Ripple(Colors.snow, false)}
-        style={styles.button}
-        onPress={() => _signin}
-      >
-        <Text style={styles.buttonText}>Login</Text>
-      </Touchable>
+      {!isLoading && (
+        <Touchable
+          background={Touchable.Ripple(Colors.snow, false)}
+          style={styles.button}
+          onPress={_signin}
+        >
+          <Text style={styles.buttonText}>Login</Text>
+        </Touchable>
+      )}
     </ImageBackground>
   );
 };

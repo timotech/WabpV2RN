@@ -5,4 +5,5 @@ export default {
   congoBrown: "#605452",
   yellow50: "#ffca28",
   oldUsedViolet: "#A41DED",
+  lightGray: "#D3D3D3",
 };
