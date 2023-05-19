@@ -18,6 +18,7 @@ import StarRating from "react-native-star-rating";
 
 const AddReview = (props) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [starCount, setStarCount] = useState(0);
 
   _hideModal = () => {
     props.setModalVisible(false);
@@ -71,11 +72,12 @@ const AddReview = (props) => {
   };
 
   _setReviewStar = (number) => {
-    props.setData({ submittedRating: number });
+    props.setData(number);
+    setStarCount(number);
   };
 
   _setReviewComment = (value) => {
-    props.setData({ submittedComment: value });
+    props.setData(value);
   };
 
   const { name, rating, comment, modalVisible } = props;
@@ -106,16 +108,16 @@ const AddReview = (props) => {
               halfStar={"ios-star-half"}
               iconSet={"Ionicons"}
               maxStars={5}
-              rating={rating}
+              rating={starCount}
               fullStarColor={Colors.yellow50}
               starSize={25}
-              selectedStar={_setReviewStar}
+              selectedStar={(rating) => _setReviewStar(rating)}
             />
           </View>
 
           <TextInput
             multiline={true}
-            numberOfLines={5}
+            numberOfLines={10}
             onChangeText={_setReviewComment}
             placeholder="Leave a comment"
             style={styles.textInput}
@@ -179,15 +181,18 @@ const styles = StyleSheet.create({
   // },
   textInput: {
     borderStyle: "solid",
-    borderSize: "1px",
+    borderWidth: 1,
     borderColor: Colors.congoBrown,
     color: Colors.congoBrown,
     fontSize: 14,
     width: "100%",
     marginBottom: 25,
+    padding: 5,
   },
   button: {
     backgroundColor: Colors.blueViolet,
+    padding: 15,
+    borderRadius: 10,
   },
   buttonText: {
     color: Colors.titanWhite,

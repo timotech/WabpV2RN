@@ -11,6 +11,7 @@ import Review from "./Review";
 import CartItem from "./CartItem";
 import CartTotal from "./CartTotal";
 import ProgressBar from "./ProgressBar";
+import CartNumItems from "./CartNumItems";
 
 export {
   Books,
@@ -26,4 +27,5 @@ export {
   CartItem,
   CartTotal,
   ProgressBar,
+  CartNumItems,
 };

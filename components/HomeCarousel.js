@@ -6,6 +6,7 @@ import {
   Dimensions,
   StyleSheet,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 
@@ -13,6 +14,7 @@ const { width: screenWidth } = Dimensions.get("window");
 
 const HomeCarousel = (props) => {
   const [entries, setEntries] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   // const carouselRef = useRef(null);
 
   // const goForward = () => {
@@ -20,10 +22,12 @@ const HomeCarousel = (props) => {
   // };
 
   useEffect(() => {
+    setIsLoading(true);
     fetch("https://books.timotech.com.ng/api/books/GetBanners")
       .then((response) => response.json())
       .then((json) => {
         setEntries(json);
+        setIsLoading(false);
       })
       .catch((error) => {
         ToastAndroid.show(
@@ -51,6 +55,14 @@ const HomeCarousel = (props) => {
 
   return (
     <View style={{ flex: 1 }}>
+      {isLoading && (
+        <ActivityIndicator
+          size="large"
+          color="#00ff00"
+          animating={isLoading}
+          style={{ marginTop: 20 }}
+        />
+      )}
       <Carousel
         loop
         width={screenWidth}

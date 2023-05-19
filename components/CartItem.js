@@ -1,6 +1,5 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
-import Colors from "../shared/constants/Colors";
-import Layout from "../shared/constants/Layout";
+import { Colors, Layout } from "../shared";
 import React from "react";
 import {
   StyleSheet,
@@ -16,7 +15,7 @@ import {
 const SCREEN_WIDTH = Layout.window.width;
 const BOOK_WIDTH = (SCREEN_WIDTH - 50) * 0.4;
 
-const CartItem = ({ index, item, increaseQty, decreaseQty, removeItem }) => (
+const CartItem = ({ item, addItem, removeItem }) => (
   <View style={styles.buyDetails}>
     <Image
       style={{ width: BOOK_WIDTH }}
@@ -52,20 +51,14 @@ const CartItem = ({ index, item, increaseQty, decreaseQty, removeItem }) => (
             />
           </View>
           <View style={styles.buyQtyButtons}>
-            <TouchableOpacity
-              style={styles.buyQtyButton}
-              onPress={() => increaseQty(index)}
-            >
+            <TouchableOpacity style={styles.buyQtyButton} onPress={addItem}>
               <MaterialIcons
                 name="arrow-drop-up"
                 size={20}
                 color={Colors.congoBrown}
               />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.buyQtyButton}
-              onPress={() => decreaseQty(index)}
-            >
+            <TouchableOpacity style={styles.buyQtyButton} onPress={removeItem}>
               <MaterialIcons
                 name="arrow-drop-down"
                 size={20}
@@ -74,7 +67,7 @@ const CartItem = ({ index, item, increaseQty, decreaseQty, removeItem }) => (
             </TouchableOpacity>
           </View>
         </View>
-        <TouchableOpacity style={styles.bin} onPress={() => removeItem(index)}>
+        <TouchableOpacity style={styles.bin} onPress={removeItem}>
           <Feather name="trash" size={18} color={Colors.congoBrown} />
         </TouchableOpacity>
       </View>

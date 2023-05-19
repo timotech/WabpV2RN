@@ -6,7 +6,6 @@ const Card = (props) => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     borderRadius: 10,
     borderColor: "#D3D3D3",
     borderWidth: 1,

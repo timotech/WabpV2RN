@@ -48,6 +48,7 @@ const AdditionalInfo = (props) => {
         style={{
           justifyContent: "flex-start",
           alignItems: "flex-start",
+          width: "100%",
         }}
       >
         {selectCatg == 1 && (
@@ -67,27 +68,28 @@ const AdditionalInfo = (props) => {
           <View style={styles.tabStyle}>
             <View style={[styles.tabContent, styles.reviewsContent]}>
               {/** Floating action button */}
-              <TouchableOpacity style={styles.add} onPress={this._showModal}>
+              <TouchableOpacity style={styles.add} onPress={_showModal}>
                 <Feather name="plus" size={30} color={Colors.titanWhite} />
               </TouchableOpacity>
               {/** Reviews goes here */}
-              <FlatList
-                data={reviews}
-                keyExtractor={_keyExtractor}
-                renderItem={_renderItem}
-                removeClippedSubviews={false}
-              />
+              {reviews != null && reviews.length > 0 ? (
+                <FlatList
+                  data={reviews}
+                  keyExtractor={_keyExtractor}
+                  renderItem={_renderItem}
+                  removeClippedSubviews={false}
+                />
               ) : (
-              <View
-                style={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginTop: 20,
-                }}
-              >
-                <Text>No reviews yet! Be the first to put one</Text>
-              </View>
-              )
+                <View
+                  style={{
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginTop: 20,
+                  }}
+                >
+                  <Text>No reviews yet! Be the first to put one</Text>
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -105,7 +107,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.snow,
     justifyContent: "flex-start",
     // alignItems: 'flex-end',
-    width: 100,
+    width: "100%",
     // borderWidth: 1,
   },
   tabTextStyle: {

@@ -23,6 +23,21 @@ export default class AboutScreen extends Component {
   };
 
   async componentDidMount() {
+    const { navigation } = this.props;
+
+    navigation.setOptions({
+      title: "About",
+      headerLeft: () => (
+        <Touchable
+          background={Touchable.Ripple(Colors.blueViolet, true)}
+          style={[styles.headerItem, styles.headerIcon]}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="ios-arrow-back" size={25} color={Colors.congoBrown} />
+        </Touchable>
+      ),
+    });
+
     // const aboutus = await AsyncStorage.getItem("aboutus");
     // if (aboutus != null) {
     //   this.setState({
@@ -63,21 +78,6 @@ export default class AboutScreen extends Component {
       .catch((error) => {
         console.log(error.message);
       });
-  };
-
-  static navigationOptions = ({ navigation }) => {
-    return {
-      headerTitle: `About`,
-      headerLeft: (
-        <Touchable
-          background={Touchable.Ripple(Colors.blueViolet, true)}
-          style={[styles.headerItem, styles.headerIcon]}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="ios-arrow-back" size={25} color={Colors.congoBrown} />
-        </Touchable>
-      ),
-    };
   };
 
   _onRefresh = () => {
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerIcon: {
-    paddingVertical: 9,
+    paddingVertical: 15,
     paddingHorizontal: 20,
   },
   content: {

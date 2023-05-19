@@ -126,13 +126,18 @@ const BEST = [
 ];
 
 export default class CategoriesScreen extends Component {
-  state = {
-    refreshing: false,
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      refreshing: false,
+    };
+  }
 
-  static navigationOptions = ({ navigation }) => {
-    return {
-      headerTitle: `Browse Categories`,
+  componentDidMount() {
+    const { navigation } = this.props;
+
+    navigation.setOptions({
+      title: "Browse Categories",
       headerLeft: () => (
         <Touchable
           background={Touchable.Ripple(Colors.blueViolet, true)}
@@ -142,8 +147,8 @@ export default class CategoriesScreen extends Component {
           <Ionicons name="ios-arrow-back" size={25} color={Colors.congoBrown} />
         </Touchable>
       ),
-    };
-  };
+    });
+  }
 
   _onRefresh = () => {
     this.setState({ refreshing: true });
@@ -277,7 +282,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerIcon: {
-    paddingVertical: 9,
+    paddingVertical: 15,
     paddingHorizontal: 20,
   },
   content: {

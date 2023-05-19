@@ -1,29 +1,19 @@
-import * as React from "react";
-import { StyleSheet, View, Text, ActivityIndicator } from "react-native";
+import React, { useState, useEffect } from "react";
+import { StyleSheet, View, ActivityIndicator } from "react-native";
 import { WebView } from "react-native-webview";
-import Colors from "../shared/constants/Colors";
-import Touchable from "../shared/components/Touchable";
+import { Colors, Touchable } from "../shared";
 import { Ionicons } from "@expo/vector-icons";
 import * as Speech from "expo-speech";
 
-export default class ViewScreen extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      //id: this.props.navigation.getParam("id"),
-      title: props.navigation.getParam("title"),
-      //bookpath: this.props.navigation.getParam("ebookPath"),
-      added: false,
-      base64Code: props.navigation.getParam("base64Code"),
-      isLoading: true,
-      downloadProgress: 0,
-      filePath: "",
-    };
-  }
+const ViewScreen = (props) => {
+  const { navigation, route } = props;
+  const [title, setTitle] = useState(route.title);
+  const [base64Code, setBase64Code] = useState(route.base64Code);
+  const [isLoading, setIsLoading] = useState(true);
 
-  static navigationOptions = ({ navigation }) => {
-    return {
-      headerTitle: navigation.getParam("title"),
+  useEffect(() => {
+    navigation.setOptions({
+      title: title,
       headerLeft: () => (
         <Touchable
           background={Touchable.Ripple(Colors.blueViolet, true)}
@@ -33,58 +23,21 @@ export default class ViewScreen extends React.Component {
           <Ionicons name="ios-arrow-back" size={25} color={Colors.congoBrown} />
         </Touchable>
       ),
-    };
-  };
-
-  componentDidMount() {
-    //console.log(this.state.isLoading);
-    setTimeout(() => {
-      this.setState({ isLoading: false });
-    }, 25000);
-  }
-
-  componentWillUnmount() {
-    this.setState({
-      base64Code: "",
-      title: "",
     });
-  }
+  }, [navigation]);
 
-  // saveFile = async () => {
-  //   const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
-  //   if (status === "granted") {
-  //     this.setState({ isLoading: true });
-  //     await FileSystem.downloadAsync(
-  //       "http://books.timotechng.com/images/compressed/Basic Technology for Junior  Secondary Schools, Book 3.txt",
-  //       FileSystem.documentDirectory +
-  //         "Basic Technology for Junior  Secondary Schools, Book 3.txt"
-  //     )
-  //       .then(({ uri }) => {
-  //         this.setState({ isLoading: false });
-  //         console.log("Finished downloading to ", uri);
-  //         this.setState({ added: true });
-  //       })
-  //       .catch((error) => {
-  //         this.setState({ isLoading: false });
-  //         console.error(error);
-  //       });
-  //     //write base64Code to userdata.txt file
-  //     if (this.state.added == true) {
-  //       let fileUri =
-  //         FileSystem.documentDirectory +
-  //         "Basic Technology for Junior  Secondary Schools, Book 3.txt";
-  //       //const asset = await MediaLibrary.createAssetAsync(fileUri);
-  //       //await MediaLibrary.createAlbumAsync("Download", asset, false);
-  //       //get file information
-  //       const asset = FileSystem.getInfoAsync(fileUri);
-  //       //const assetInfo = await MediaLibrary.getAssetInfoAsync(asset);
-  //       console.log(asset);
-  //     }
-  //   }
-  // };
-  //${this.state.title}
+  useEffect(() => {
+    setTimeout(() => {
+      setIsLoading(true);
+      setTitle(route.title);
+      setBase64Code(route.base64Code);
+    }, 25000);
 
-  onMessage(m) {
+    setIsLoading(false);
+    return () => {};
+  }, []);
+
+  const onMessage = (m) => {
     // if(m.nativeEvent.data === "pause"){
     //   if(Speech.isSpeakingAsync()){
     //     Speech.pause();
@@ -108,10 +61,9 @@ export default class ViewScreen extends React.Component {
         });
       }
     }
-  }
+  };
 
-  render() {
-    const html = `
+  const html = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -251,7 +203,7 @@ button {
 </div>
 <script>
 	book = null;
-  var b64 = ${JSON.stringify(this.state.base64Code)};
+  var b64 = ${JSON.stringify(base64Code)};
   
   var bin = atob(b64);
   
@@ -483,66 +435,24 @@ $("document").ready(function() {
       </body>
       </html>`;
 
-    // return (
-    //   <View style={{ flex: 1 }}>
-    //     <WebView source={{ html: html }} javaScriptEnabled={true} />
-    //   </View>
-    // );
-
-    // this.state.isLoading ? (
-    //   <View style={{ marginTop: 20 }}>
-    //     <ActivityIndicator
-    //       size="large"
-    //       color="#00ff00"
-    //       animating={this.state.isLoading}
-    //     />
-    //     <Text style={{ justifyContent: "center", textAlign: "center" }}>
-    //       Downloading file for first time use at {this.state.downloadProgress}kb downloaded
-    //     </Text>
-    //   </View>
-    // ) : this.state.base64Code !== "" ?
-    //: (
-    //  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    //    <Text style={{ textAlign: "center" }}>
-    //      Book Render Error, Please contact administrator at info@wabp.com.ng
-    //    </Text>
-    //  </View>
-    //)
-
-    // (
-    //   <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-    //     <Text style={{ textAlign: "center" }}>
-    //       Book Render Error, Please contact administrator at info@wabp.com.ng
-    //     </Text>
-    //   </View>
-    // );
-    {
-      /* <WebView
-          source={{ html: html }}
-          javaScriptEnabled={true}
-          onMessage={(m) => this.onMessage(m)}
-        /> */
-    }
-
-    return this.state.isLoading ? (
-      <View style={{ marginTop: 20 }}>
-        <ActivityIndicator
-          size="large"
-          color="#00ff00"
-          animating={this.state.isLoading}
-        />
-      </View>
-    ) : (
-      <View style={{ flex: 1 }}>
-        <WebView
-          source={{ html: html }}
-          javaScriptEnabled={true}
-          onMessage={(m) => this.onMessage(m)}
-        />
-      </View>
-    );
-  }
-}
+  return isLoading ? (
+    <View style={{ marginTop: 20 }}>
+      <ActivityIndicator
+        size="large"
+        color="#00ff00"
+        animating={this.state.isLoading}
+      />
+    </View>
+  ) : (
+    <View style={{ flex: 1 }}>
+      <WebView
+        source={{ html: html }}
+        javaScriptEnabled={true}
+        onMessage={(m) => onMessage(m)}
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -554,7 +464,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerIcon: {
-    paddingVertical: 9,
+    paddingVertical: 15,
     paddingHorizontal: 20,
   },
 });
+
+export default ViewScreen;

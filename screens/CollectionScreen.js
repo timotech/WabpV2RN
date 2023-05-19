@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Colors from "../shared/constants/Colors";
 import Layout from "../shared/constants/Layout";
 import Touchable from "../shared/components/Touchable";
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import {
   RefreshControl,
   StyleSheet,
@@ -19,28 +19,21 @@ import * as FileSystem from "expo-file-system";
 
 const SCREEN_WIDTH = Layout.window.width;
 
-export default class CollectionScreen extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      refreshing: false,
-      dataBook: [],
-      selectCatg: 0,
-      isLoading: false,
-      isUpdating: false,
-      error: null,
-      isConnected: false,
-      base64Code: "",
-      downloading: false,
-      totalProgress: 0,
-      writeProgress: 0,
-      fileSize: 0,
-    };
-  }
+const CollectionScreen = ({ navigation }) => {
+  const [refreshing, setRefreshing] = useState(false);
+  const [dataBook, setDataBook] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState(null);
+  const [base64Code, setBase64Code] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const [totalProgress, setTotalProgress] = useState(0);
+  const [writeProgress, setWriteProgress] = useState(0);
+  const [fileSize, setFileSize] = useState(0);
 
-  static navigationOptions = ({ navigation }) => {
-    return {
-      headerTitle: `My Collections`,
+  useEffect(() => {
+    navigation.setOptions({
+      title: "My Collections",
       headerLeft: () => (
         <Touchable
           background={Touchable.Ripple(Colors.blueViolet, true)}
@@ -50,45 +43,36 @@ export default class CollectionScreen extends Component {
           <Ionicons name="ios-arrow-back" size={25} color={Colors.congoBrown} />
         </Touchable>
       ),
-    };
-  };
-
-  componentWillUnmount() {
-    this._subscribe.remove();
-    //console.log("I unmounted");
-  }
-
-  async componentDidMount() {
-    this._subscribe = this.props.navigation.addListener("didFocus", () => {
-      this.getData();
-      //Put your Data loading function here instead of my this.LoadData()
     });
+  }, [navigation]);
 
-    // const allConnections = await AsyncStorage.getItem("collections");
-    // if (allConnections == null) {
-    //   //console.log('I got here');
-    //   this.getOnlineCollection();
-    // }
-  }
+  useEffect(() => {
+    getData();
+  }, []);
 
-  getData = async () => {
-    this.setState({ isLoading: true });
+  useEffect(() => {
+    if (refreshing) {
+      getOnlineCollection();
+      setRefreshing(false);
+    }
+  }, [refreshing]);
+
+  const getData = async () => {
+    setIsLoading(true);
 
     const allConnections = await AsyncStorage.getItem("collections");
 
     if (allConnections !== null) {
-      //console.log("getting local collections");
-      this.setState({
-        isLoading: false,
-        dataBook: JSON.parse(allConnections),
-      });
+      setIsLoading(false);
+      setDataBook(JSON.parse(allConnections));
     } else {
-      this.getOnlineCollection();
+      getOnlineCollection();
     }
   };
 
-  getOnlineCollection = async () => {
-    let email = await AsyncStorage.getItem("email");
+  const getOnlineCollection = async () => {
+    setIsLoading(true);
+    const email = await AsyncStorage.getItem("email");
 
     let url = `https://books.timotech.com.ng/api/books/GetMyCollection?Email=${JSON.parse(
       email
@@ -109,25 +93,20 @@ export default class CollectionScreen extends Component {
         }
       })
       .then((responseJson) => {
-        this.setState({
-          isLoading: false,
-          dataBook: responseJson,
-        });
-
+        setIsLoading(false);
+        setDataBook(responseJson);
         //store in storage here
-        //this.saveFile(responseJson);
         AsyncStorage.setItem("collections", JSON.stringify(responseJson));
-        //const allConnections = AsyncStorage.getItem("collections");
       })
       .catch((error) => {
-        ToastAndroid.show(error.message, ToastAndroid.SHORT);
+        ToastAndroid.show(error, ToastAndroid.LONG);
       })
       .finally(() => {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       });
   };
 
-  downloadEbook = async (ebookPath, title, id) => {
+  const downloadEbook = async (ebookPath, title, id) => {
     let total = 0;
     let writeByte = 0;
     let filePath =
@@ -136,21 +115,21 @@ export default class CollectionScreen extends Component {
 
     console.log("downloading from: " + filePath);
 
-    this.setState({ downloading: true });
+    setIsLoading(true);
+    setDownloading(true);
 
     const callback = (downloadProgress) => {
       total = downloadProgress.totalBytesExpectedToWrite / 1000;
       writeByte = downloadProgress.totalBytesWritten / 1000;
 
-      this.setState({
-        totalProgress:
-          total == -0.001
-            ? this.state.fileSize / 1000
-            : writeByte > this.state.fileSize / 1000
-            ? writeByte
-            : total,
-        writeProgress: writeByte,
-      });
+      total == -0.001
+        ? this.state.fileSize / 1000
+        : writeByte > this.state.fileSize / 1000
+        ? writeByte
+        : total;
+
+      setTotalProgress(total);
+      setWriteProgress(writeByte);
     };
 
     const downloadResumable = FileSystem.createDownloadResumable(
@@ -164,10 +143,11 @@ export default class CollectionScreen extends Component {
       const { uri } = await downloadResumable.downloadAsync();
       console.log("Finished downloading to ", uri);
 
-      this.setState({ downloading: false });
-      this.setState({ isLoading: true });
+      setDownloading(false);
+      setIsLoading(true);
       //update database book downloaded to device
-      var message = this._updateCollectionInfo(id);
+      //var message =
+      _updateCollectionInfo(id);
       //console.log("Collection Update: ", message);
 
       let tmp = await FileSystem.getInfoAsync(
@@ -177,11 +157,11 @@ export default class CollectionScreen extends Component {
       if (tmp.exists) {
         let file = await FileSystem.readAsStringAsync(tmp.uri);
         console.log(file.substring(100));
-        this.viewFile(uri, title);
+        viewFile(uri, title);
       }
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     } catch (e) {
-      this.setState({ downloading: false });
+      setDownloading(false);
 
       alert("Error Downloading Book. Please try again!");
       return;
@@ -192,41 +172,40 @@ export default class CollectionScreen extends Component {
   viewFile = async (fileUri, title) => {
     let file = await FileSystem.readAsStringAsync(fileUri);
 
-    this.setState({
-      base64Code: file,
-      downloading: false,
-    });
-    this.props.navigation.navigate("Views", {
-      base64Code: this.state.base64Code,
+    setDownloading(false);
+    setBase64Code(file);
+
+    navigation.navigate("Views", {
+      base64Code: base64Code,
       title: title,
     });
   };
 
   downloadEbookNew = async (ebookPath, title, id) => {
     //console.log("downloading");
-    this.setState({ downloading: true });
+    setDownloading(true);
     const { uri } = await FileSystem.downloadAsync(
       "https://books.timotech.com.ng/images/compressed/" + ebookPath + ".txt",
       FileSystem.documentDirectory + ebookPath + ".txt"
     )
       .then(({ uri }) => {
         console.log("Finished downloading to ", uri);
-        this.setState({ downloading: false });
-        var message = this._updateCollectionInfo(id);
+        setDownloading(false);
+        var message = _updateCollectionInfo(id);
         console.log("Collection Update: ", message);
-        this.viewFile(uri, title);
+        viewFile(uri, title);
       })
       .catch((error) => {
         alert("Network Error or file Unreachable. Please try again!");
         //return;
-        this.getData();
+        //getData();
       });
   };
 
   readEbook = async (ebookPath, title, fileSize, id) => {
     try {
-      this.setState({ isLoading: true });
-      this.setState({ fileSize: fileSize });
+      setIsLoading(true);
+      setFileSize(fileSize);
       //ebookPath = ebookPath.split(".").slice(0, -1).join(".");
 
       let tmp = await FileSystem.getInfoAsync(
@@ -235,13 +214,13 @@ export default class CollectionScreen extends Component {
 
       if (!tmp.exists) {
         //Check whether already downloaded before continuing
-        var getStatus = await this._checkDownloaded(id);
+        var getStatus = await _checkDownloaded(id);
 
         if (getStatus == 0) {
-          this.downloadEbook(ebookPath, title, id);
+          downloadEbook(ebookPath, title, id);
         } else {
           alert("Ebook Already Downloaded!");
-          this.getData();
+          //this.getData();
           //return;
         }
       }
@@ -252,28 +231,23 @@ export default class CollectionScreen extends Component {
           FileSystem.documentDirectory + ebookPath + ".txt"
         );
         //download afresh
-        this.downloadEbook(ebookPath, title, id);
+        downloadEbook(ebookPath, title, id);
       } else {
-        this.viewFile(tmp.uri, title);
+        viewFile(tmp.uri, title);
       }
     } catch (error) {
-      ToastAndroid.show(
-        "Error Reading Book: " + error.message,
-        ToastAndroid.LONG
-      );
-      //console.log("Error reading Book: ", error.message);
+      ToastAndroid.show("Error Reading Book: " + error, ToastAndroid.LONG);
     }
   };
 
   _updateCollectionInfo = async (id) => {
-    this.setState({ isUpdating: true });
+    setIsUpdating(true);
 
     let email = await AsyncStorage.getItem("email");
 
     let url = `https://books.timotech.com.ng/api/books/UpdateCollection?id=${id}&email=${JSON.parse(
       email
     )}`;
-    //console.log("updating link: ", url);
 
     return fetch(url, {
       method: "PUT",
@@ -290,18 +264,15 @@ export default class CollectionScreen extends Component {
         }
       })
       .then((responseJson) => {
-        this.setState({
-          isUpdating: false,
-        });
+        setIsUpdating(false);
         //console.log("Collection Update", responseJson.message);
         return JSON.stringify(responseJson.message);
       })
       .catch((error) => {
         ToastAndroid.show(
-          "Error Updating User Setting: " + error.message,
+          "Error Updating User Setting: " + error,
           ToastAndroid.LONG
         );
-        //console.log("error updating db: ", error.message);
       });
   };
 
@@ -329,23 +300,20 @@ export default class CollectionScreen extends Component {
         return JSON.parse(responseJson);
       })
       .catch((error) => {
-        // Alert.alert("Something Went Wrong", error.message, [
-        //   {
-        //     text: "Try Again",
-        //     onPress: this.getData,
-        //   },
-        // ]);
-        //console.log(error.message);
+        ToastAndroid.show(
+          "Error Checking Downloaded File: " + error,
+          ToastAndroid.LONG
+        );
       });
   };
 
-  _onRefresh = () => {
-    this.setState({ refreshing: true });
-    setTimeout(() => {
-      this.getOnlineCollection();
-      this.setState({ refreshing: false });
-    }, 10000);
-  };
+  // _onRefresh = () => {
+  //   setRefreshing(true);
+  //   setTimeout(() => {
+  //     getOnlineCollection();
+  //     setRefreshing(false);
+  //   }, 10000);
+  // };
 
   _keyExtractor = (item, index) => `${index}`;
 
@@ -355,67 +323,62 @@ export default class CollectionScreen extends Component {
         key={item.id}
         pick={item}
         handleOnPress={() =>
-          this.readEbook(item.ebookPath, item.title, item.fileSize, item.id)
+          readEbook(item.ebookPath, item.title, item.fileSize, item.id)
         }
       />
     </View>
   );
 
-  render() {
-    return (
-      <View style={styles.container}>
-        {this.state.downloading ? (
-          <View style={{ marginTop: 20 }}>
-            <ActivityIndicator
-              size="large"
-              color="#00ff00"
-              animating={this.state.downloading}
-            />
-            <Text
-              style={{
-                marginTop: 30,
-                justifyContent: "center",
-                alignItems: "center",
-                textAlign: "center",
-                fontSize: 18,
-              }}
-            >
-              Fetching Ebook for first time use at {this.state.writeProgress}kb
-              of {this.state.totalProgress}kb
-              {/* Fetching Ebook for first time download... Please wait!!! */}
-            </Text>
-          </View>
-        ) : this.state.isLoading ? (
-          <View style={{ marginTop: 20 }}>
-            <ActivityIndicator
-              size="large"
-              color="#00ff00"
-              animating={this.state.isLoading}
-            />
-          </View>
-        ) : (
-          <View style={styles.content}>
-            <FlatList
-              data={this.state.dataBook}
-              extraData={this.state}
-              keyExtractor={this._keyExtractor}
-              renderItem={this._renderItem}
-              scrollEventThrottle={16}
-              showsHorizontalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={this.state.refreshing}
-                  onRefresh={this._onRefresh}
-                />
-              }
-            />
-            <Text>Pull down to refresh</Text>
-          </View>
-        )}
-      </View>
-    );
-  }
-}
+  return (
+    <View style={styles.container}>
+      {downloading && (
+        <View style={{ marginTop: 20 }}>
+          <ActivityIndicator
+            size="large"
+            color="#00ff00"
+            animating={downloading}
+          />
+          <Text
+            style={{
+              marginTop: 30,
+              justifyContent: "center",
+              alignItems: "center",
+              textAlign: "center",
+              fontSize: 18,
+            }}
+          >
+            Fetching Ebook for first time use at {writeProgress}kb of{" "}
+            {totalProgress}kb
+            {/* Fetching Ebook for first time download... Please wait!!! */}
+          </Text>
+        </View>
+      )}
+      {isLoading && (
+        <View style={{ marginTop: 20 }}>
+          <ActivityIndicator
+            size="large"
+            color="#00ff00"
+            animating={isLoading}
+          />
+        </View>
+      )}
+      {!downloading && !isLoading && (
+        <View style={styles.content}>
+          <FlatList
+            data={dataBook}
+            keyExtractor={_keyExtractor}
+            renderItem={_renderItem}
+            scrollEventThrottle={16}
+            showsHorizontalScrollIndicator={false}
+            refreshing={refreshing}
+            onRefresh={() => setRefreshing(true)}
+          />
+          <Text>Pull down to refresh</Text>
+        </View>
+      )}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -427,7 +390,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerIcon: {
-    paddingVertical: 9,
+    paddingVertical: 15,
     paddingHorizontal: 20,
   },
   content: {
@@ -443,3 +406,5 @@ const styles = StyleSheet.create({
     color: Colors.congoBrown,
   },
 });
+
+export default CollectionScreen;

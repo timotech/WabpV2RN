@@ -9,7 +9,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { Colors, Touchable } from "../shared";
-import { HomeCarousel, Showcase, Books } from "../components";
+import { HomeCarousel, Showcase, Books, CartNumItems } from "../components";
 
 const HomeScreen = ({ navigation }) => {
   const [refresh, setRefresh] = useState(false);
@@ -49,7 +49,9 @@ const HomeScreen = ({ navigation }) => {
                 size={20}
                 color={Colors.congoBrown}
               />
-              <View style={styles.cartHasItems}></View>
+              <View style={styles.cartHasItems}>
+                <CartNumItems />
+              </View>
             </View>
           </Touchable>
           <Touchable

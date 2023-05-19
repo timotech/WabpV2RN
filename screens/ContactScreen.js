@@ -1,5 +1,5 @@
-import React, { Component } from "react";
-import { Colors } from "../shared";
+import React, { useState, useEffect } from "react";
+import { Colors, Touchable } from "../shared";
 import {
   StyleSheet,
   TouchableOpacity,
@@ -8,33 +8,39 @@ import {
   Text,
   TextInput,
   Button,
+  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import Card from "../components/Card";
 import { Ionicons } from "@expo/vector-icons";
 
-export default class ContactScreen extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      name: null,
-      mobile: null,
-      email: null,
-      msg: null,
-      isSubmited: false,
-    };
-  }
+const ContactScreen = ({ navigation }) => {
+  const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [email, setEmail] = useState("");
+  const [msg, setMsg] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  postContact = (
-    name,
-    mobile,
-    email,
-    msg,
-    nameClear,
-    mobileClear,
-    emailClear,
-    msgClear
-  ) => {
-    if (this.state.msg != null) {
+  useEffect(() => {
+    navigation.setOptions({
+      title: "Contact Us",
+      headerLeft: () => (
+        <Touchable
+          background={Touchable.Ripple(Colors.blueViolet, true)}
+          style={[styles.headerItem, styles.menuIcon]}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="ios-arrow-back" size={25} color={Colors.congoBrown} />
+        </Touchable>
+      ),
+    });
+  }, [navigation]);
+
+  postContact = () => {
+    setIsLoading(true);
+
+    if (msg != null) {
       fetch("https://books.timotech.com.ng/api/books/PostContact", {
         method: "POST",
         headers: {
@@ -51,17 +57,12 @@ export default class ContactScreen extends Component {
         .then((response) => response.json())
         .then((responseData) => {
           if (responseData.name != null) {
-            this.refs[nameClear].setNativeProps({ text: "" });
-            this.refs[mobileClear].setNativeProps({ text: "" });
-            this.refs[emailClear].setNativeProps({ text: "" });
-            this.refs[msgClear].setNativeProps({ text: "" });
-            this.setState({
-              name: null,
-              mobile: null,
-              email: null,
-              msg: null,
-              isSubmited: true,
-            });
+            setName("");
+            setMobile("");
+            setEmail("");
+            setMsg("");
+            setIsSubmitted(true);
+            setIsLoading(false);
           } else {
             Alert.alert(
               "Oops !",
@@ -94,121 +95,131 @@ export default class ContactScreen extends Component {
     }
   };
 
-  _togglePostCard() {
-    this.setState({
-      isSubmited: false,
-    });
-  }
+  _togglePostCard = () => {
+    setIsSubmitted(false);
+  };
 
-  render() {
-    return (
-      <View>
-        <View style={{ backgroundColor: Colors.blueViolet }}>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Text>CONTACT</Text>
-          </View>
-        </View>
-        <View>
-          <Card style={styles.postCard}>
-            {this.state.isSubmited ? (
+  return (
+    <ScrollView style={styles.container}>
+      <View style={{ ...styles.temp, marginTop: 50 }}>
+        <Card>
+          {isSubmitted && (
+            <View style={styles.headerItem}>
               <View>
-                <View>
+                <Ionicons
+                  name="ios-checkmark-circle"
+                  size={30}
+                  color="#4CAF50"
+                  style={{
+                    marginLeft: 5,
+                    marginRight: 10,
+                  }}
+                />
+                <Text style={{ flex: 1 }}>
+                  Thanks. We will get in touch with you as soon as possible
+                </Text>
+              </View>
+              <View>
+                <TouchableOpacity onPress={_togglePostCard}>
                   <Ionicons
-                    name="ios-checkmark-circle"
-                    size={30}
-                    color="#4CAF50"
-                    style={{
-                      marginLeft: 5,
-                      marginRight: 10,
-                    }}
+                    name="refresh"
+                    size={50}
+                    color="#64DD17"
+                    style={{ marginLeft: 10 }}
                   />
-                  <Text style={{ flex: 1 }}>
-                    Thanks. We will get in touch with you as soon as possible
-                  </Text>
-                </View>
-                <View>
-                  <TouchableOpacity onPress={() => this._togglePostCard()}>
-                    <Ionicons
-                      name="refresh"
-                      size={50}
-                      color="#64DD17"
-                      style={{ marginLeft: 10 }}
-                    />
-                  </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               </View>
-            ) : (
-              <View>
-                <View>
-                  <TextInput
-                    placeholder="Name"
-                    onChangeText={(name) => this.setState({ name })}
-                    ref={"nameClear"}
-                  />
-                </View>
-                <View>
-                  <TextInput
-                    placeholder="Mobile"
-                    onChangeText={(mobile) => this.setState({ mobile })}
-                    ref={"mobileClear"}
-                    keyboardType={"phone-pad"}
-                  />
-                </View>
-                <View>
-                  <TextInput
-                    placeholder="Email"
-                    onChangeText={(email) => this.setState({ email })}
-                    ref={"emailClear"}
-                    keyboardType={"email-address"}
-                  />
-                </View>
-                <Form style={{ marginLeft: 20, marginRight: 20 }}>
-                  <TextInput
-                    multiline
-                    numberOfLines={5}
-                    onChangeText={(msg) => this.setState({ msg })}
-                    ref={"msgClear"}
-                    placeholder="Type your message here"
-                  />
-                </Form>
-                <View>
-                  <Button
-                    title="SUBMIT"
-                    onPress={() =>
-                      this.postContact(
-                        this.state.name,
-                        this.state.mobile,
-                        this.state.email,
-                        this.state.msg,
-                        "nameClear",
-                        "mobileClear",
-                        "emailClear",
-                        "msgClear"
-                      )
-                    }
-                  />
-                </View>
+            </View>
+          )}
+          {!isSubmitted && (
+            <View style={{ flex: 1 }}>
+              <View style={[styles.temp, styles.inputItem]}>
+                <TextInput
+                  placeholder="Name"
+                  style={styles.textInput}
+                  onChangeText={(name) => setName(name)}
+                />
               </View>
-            )}
-          </Card>
-        </View>
+              <View style={[styles.temp, styles.inputItem]}>
+                <TextInput
+                  placeholder="Mobile"
+                  onChangeText={(mobile) => setMobile(mobile)}
+                  keyboardType={"phone-pad"}
+                  style={styles.textInput}
+                />
+              </View>
+              <View style={[styles.temp, styles.inputItem]}>
+                <TextInput
+                  placeholder="Email"
+                  onChangeText={(email) => setEmail(email)}
+                  keyboardType={"email-address"}
+                  style={styles.textInput}
+                />
+              </View>
+              <View style={[styles.temp, styles.inputItem]}>
+                <TextInput
+                  multiline
+                  numberOfLines={8}
+                  onChangeText={(msg) => setMsg(msg)}
+                  placeholder="Type your message here"
+                  style={styles.textInput}
+                />
+              </View>
+              <View style={styles.temp}>
+                {isLoading && (
+                  <ActivityIndicator
+                    size="large"
+                    color="#00ff00"
+                    animating={isLoading}
+                  />
+                )}
+                {!isLoading && <Button title="SUBMIT" onPress={postContact} />}
+              </View>
+            </View>
+          )}
+        </Card>
       </View>
-    );
-  }
-}
+    </ScrollView>
+  );
+};
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.snow,
+    paddingRight: 20,
+    paddingLeft: 20,
+  },
+  headerItem: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuIcon: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
   postCard: {
     marginLeft: 25,
     marginRight: 25,
     marginTop: 20,
     marginBottom: 20,
   },
+  temp: {
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  inputItem: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.titanWhite,
+    marginTop: 15,
+    padding: 10,
+    color: Colors.titanWhite,
+  },
+  textInput: {
+    letterSpacing: 1,
+    fontSize: 14,
+    color: Colors.titanWhite,
+  },
 });
+
+export default ContactScreen;

@@ -16,9 +16,9 @@ import {
 } from "../screens/Index";
 
 import { Platform } from "react-native";
-import Colors from "../shared/constants/Colors";
-import Layout from "../shared/constants/Layout";
+import { Colors, Layout } from "../shared";
 import DrawerMenu from "./DrawerMenu";
+import CartProvider from "../store/CartProvider";
 
 const {
   window: { width },
@@ -28,53 +28,55 @@ const Drawer = createDrawerNavigator();
 
 const DrawerNavigation = () => {
   return (
-    <Drawer.Navigator
-      initialRouteName="Home"
-      drawerContent={(props) => <DrawerMenu {...props} />}
-      screenOptions={{
-        headerStyle: {
-          ...Platform.select({
-            ios: {
-              height: 50,
-            },
-          }),
-          backgroundColor: Colors.snow,
-          elevation: 5,
-          shadowColor: "#000",
-          shadowOffset: {
-            width: 0,
+    <CartProvider>
+      <Drawer.Navigator
+        initialRouteName="Home"
+        drawerContent={(props) => <DrawerMenu {...props} />}
+        screenOptions={{
+          headerStyle: {
             ...Platform.select({
               ios: {
-                height: 10,
+                height: 50,
               },
             }),
+            backgroundColor: Colors.snow,
+            elevation: 5,
+            shadowColor: "#000",
+            shadowOffset: {
+              width: 0,
+              ...Platform.select({
+                ios: {
+                  height: 10,
+                },
+              }),
+            },
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
           },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-        },
-        headerTitleStyle: {
-          fontWeight: "400",
-          color: Colors.congoBrown,
-        },
-        drawerStyle: {
-          backgroundColor: "transparent",
-          width: width,
-        },
-      }}
-    >
-      <Drawer.Screen name="Home" component={HomeScreen} />
-      <Drawer.Screen name="Categories" component={CategoriesScreen} />
-      <Drawer.Screen name="Listing" component={ListingScreen} />
-      <Drawer.Screen name="Detail" component={DetailScreen} />
-      <Drawer.Screen name="About" component={AboutScreen} />
-      <Drawer.Screen name="Contact" component={ContactScreen} />
-      <Drawer.Screen name="Bookmarks" component={BookmarksScreen} />
-      <Drawer.Screen name="Collections" component={CollectionScreen} />
-      <Drawer.Screen name="Cart" component={CartScreen} />
-      <Drawer.Screen name="Checkout" component={CheckoutScreen} />
-      <Drawer.Screen name="Search" component={SearchScreen} />
-      <Drawer.Screen name="Views" component={ViewScreen} />
-    </Drawer.Navigator>
+          headerTitleStyle: {
+            fontWeight: "400",
+            color: Colors.congoBrown,
+          },
+          drawerStyle: {
+            backgroundColor: "transparent",
+            width: width,
+          },
+        }}
+      >
+        <Drawer.Screen name="Home" component={HomeScreen} />
+        <Drawer.Screen name="Categories" component={CategoriesScreen} />
+        <Drawer.Screen name="Listing" component={ListingScreen} />
+        <Drawer.Screen name="Detail" component={DetailScreen} />
+        <Drawer.Screen name="About" component={AboutScreen} />
+        <Drawer.Screen name="Contact" component={ContactScreen} />
+        <Drawer.Screen name="Bookmarks" component={BookmarksScreen} />
+        <Drawer.Screen name="Collections" component={CollectionScreen} />
+        <Drawer.Screen name="Cart" component={CartScreen} />
+        <Drawer.Screen name="Checkout" component={CheckoutScreen} />
+        <Drawer.Screen name="Search" component={SearchScreen} />
+        <Drawer.Screen name="Views" component={ViewScreen} />
+      </Drawer.Navigator>
+    </CartProvider>
   );
 };
 

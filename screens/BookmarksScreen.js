@@ -28,13 +28,10 @@ export default class BookmarksScreen extends Component {
   }
 
   async componentDidMount() {
-    const email = await AsyncStorage.getItem("email");
-    this.getData(email);
-  }
+    const { navigation } = this.props;
 
-  static navigationOptions = ({ navigation }) => {
-    return {
-      headerTitle: `History`,
+    navigation.setOptions({
+      title: "History",
       headerLeft: () => (
         <Touchable
           background={Touchable.Ripple(Colors.blueViolet, true)}
@@ -44,8 +41,11 @@ export default class BookmarksScreen extends Component {
           <Ionicons name="ios-arrow-back" size={25} color={Colors.congoBrown} />
         </Touchable>
       ),
-    };
-  };
+    });
+
+    const email = await AsyncStorage.getItem("email");
+    this.getData(email);
+  }
 
   _onRefresh = () => {
     this.setState({ refreshing: true });
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerIcon: {
-    paddingVertical: 9,
+    paddingVertical: 15,
     paddingHorizontal: 20,
   },
   content: {

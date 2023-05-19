@@ -1,65 +1,30 @@
 import { Foundation, Ionicons } from "@expo/vector-icons";
-import Colors from "../shared/constants/Colors";
-import Touchable from "../shared/components/Touchable";
-import React, { Component } from "react";
-import PaystackWebView from "react-native-paystack-webview";
+import { Colors, Touchable } from "../shared";
+import React, { useState, useEffect, useRef, useContext } from "react";
+import { Paystack, paystackProps } from "react-native-paystack-webview";
 import {
   FlatList,
   Platform,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CartItem, CartTotal } from "../components";
+import CartContext from "../store/cart-context";
 
-export default class CartScreen extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      dataCart: [],
-      isLoading: false,
-      isDisabled: false,
-      refreshing: false,
-      total: 0,
-    };
-  }
+const CartScreen = ({ navigation }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const paystackWebViewRef = useRef(paystackProps.PayStackRef);
 
-  async componentDidMount() {
-    try {
-      const logged = await AsyncStorage.getItem("authtoken");
-      if (!logged) {
-        return this.props.navigation.navigate("Auth");
-      }
+  const cartCtx = useContext(CartContext);
 
-      const response = await AsyncStorage.getItem("cart");
-      if (response !== null) {
-        // We have data!!
-        const cart = await JSON.parse(response);
-        this.setState({ dataCart: cart });
-        //console.log(this.state.dataCart);
-        this._getTotal(cart);
-      }
-    } catch (err) {
-      alert(err);
-    }
-  }
-
-  _getTotal = (cart) => {
-    let total = 0;
-
-    for (var i = 0; i < cart.length; i++) {
-      total = total + cart[i].price * cart[i].quantity;
-    }
-
-    this.setState({ total: total });
-  };
-
-  static navigationOptions = ({ navigation }) => {
-    return {
-      headerTitle: "Checkout Cart",
+  useEffect(() => {
+    navigation.setOptions({
+      title: "Checkout Cart",
       headerLeft: () => (
         <Touchable
           background={Touchable.Ripple(Colors.blueViolet, true)}
@@ -81,58 +46,51 @@ export default class CartScreen extends Component {
               color: Colors.blueViolet,
             }}
           >
-            {/* N{this.state.total} */}
+            {/* N{cartCtx.totalAmount.toFixed(2)} */}
           </Text>
         </View>
       ),
-    };
-  };
+    });
+  }, [navigation]);
+
+  useEffect(() => {
+    async function fetchDatas() {
+      try {
+        const logged = await AsyncStorage.getItem("authtoken");
+        if (!logged) {
+          return navigation.navigate("Auth");
+        }
+        // const response = await AsyncStorage.getItem("cart");
+        // if (response !== null) {
+        //   // We have data!!
+        //   const cart = await JSON.parse(response);
+        //   console.log("current cart: ", cart);
+        //   dispatchCart({ type: "ADD_CART", item: cart });
+        //   console.log("current cart state", cartState.items);
+        // }
+      } catch (err) {
+        alert(err);
+      }
+    }
+
+    fetchDatas();
+  }, []);
 
   _onRefresh = () => {
-    this.setState({ refreshing: true });
+    setRefreshing(true);
     setTimeout(() => {
-      this.setState({ refreshing: false });
+      setRefreshing(false);
     }, 1500);
   };
 
-  _increaseQty = (index) => {
-    this.setState((state) => {
-      const cartItems = state.dataCart;
-      const cartItem = cartItems[index];
-
-      cartItem.quantity = `${+cartItem.quantity + 1}`;
-      cartItems[index] = cartItem;
-      this._getTotal(cartItems);
-      return { cartItems };
-    });
+  const _increaseQty = (item) => {
+    //dispatchCart({ type: "ADD_CART", item: item });
+    cartCtx.addItem({ ...item, quantity: 1 });
   };
 
-  _decreaseQty = (index) => {
-    this.setState((state) => {
-      const cartItems = state.dataCart;
-      const cartItem = cartItems[index];
-
-      const prevQty = +cartItem.quantity;
-
-      if (prevQty > 1) {
-        cartItem.quantity = `${prevQty - 1}`;
-        cartItems[index] = cartItem;
-        this._getTotal(cartItems);
-        return { cartItems };
-      }
-    });
-  };
-
-  _removeItem = (index) => {
-    this.setState((state) => {
-      const cartItems = state.dataCart.filter((dataCart, i) => i !== index);
-      this.setState({ dataCart: cartItems });
-      //console.log(JSON.stringify(cartItems));
-      AsyncStorage.setItem("cart", JSON.stringify(cartItems));
-      this._getTotal(cartItems);
-
-      return cartItems;
-    });
+  const _removeItem = (id) => {
+    //dispatchCart({ type: "REMOVE", id: id });
+    cartCtx.removeItem(id);
   };
 
   _keyExtractor = (item, index) => `${index}`;
@@ -141,19 +99,16 @@ export default class CartScreen extends Component {
     <CartItem
       key={item.id}
       item={item}
-      index={index}
-      increaseQty={this._increaseQty}
-      decreaseQty={this._decreaseQty}
-      removeItem={this._removeItem}
+      addItem={_increaseQty.bind(null, item)}
+      removeItem={_removeItem.bind(null, item.id)}
     />
   );
 
-  _getCart = async () => {
+  const _postCartToDB = async () => {
     //get cart from asyncstorage
-    this.setState({ isLoading: true });
-    this.setState({ isDisabled: true });
+    setIsLoading(true);
 
-    const fromCart = await AsyncStorage.getItem("cart");
+    const fromCart = cartCtx.items; //await AsyncStorage.getItem("cart");
     const email = await AsyncStorage.getItem("email");
 
     if (fromCart !== null) {
@@ -177,100 +132,82 @@ export default class CartScreen extends Component {
         .then(
           (responseJson) => {
             if (responseJson.isSuccess == true) {
-              this.setState({ isLoading: false });
-              this.setState({ isDisabled: false });
+              setIsLoading(false);
               AsyncStorage.removeItem("cart");
               //If successfull then go to complete,
               //else go back to cart and display error
-              this.props.navigation.navigate("Home");
+              navigation.navigate("Home");
             } else {
               alert(responseJson.message);
             }
           },
           (error) => {
-            this.setState({ isLoading: false });
-            this.setState({ isDisabled: false });
+            setIsLoading(false);
             alert(error);
           }
         );
     }
   };
 
-  render() {
-    return (
-      <View style={styles.container}>
-        {this.state.dataCart.length > 0 ? (
-          <View style={{ flex: 1 }}>
-            <ScrollView
-              refreshControl={
-                <RefreshControl
-                  refreshing={this.state.refreshing}
-                  onRefresh={this._onRefresh}
-                />
-              }
-            >
-              <View style={styles.content}>
-                {/** Cart Items */}
-                <View style={{ padding: 20 }}>
-                  <FlatList
-                    data={this.state.dataCart}
-                    extraData={this.state}
-                    keyExtractor={this._keyExtractor}
-                    renderItem={this._renderItem}
-                    scrollEventThrottle={16}
-                  />
-                </View>
-
-                {/** Cart Total */}
-                <CartTotal totalCost={this.state.total} />
-              </View>
-            </ScrollView>
-
-            <View style={styles.cartFooter}>
-              <PaystackWebView
-                buttonText="Pay Now"
-                showPayButton={true}
-                paystackKey="pk_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                amount={this.state.total}
-                billingEmail="xxxxxxxxxxxxx"
-                billingMobile="xxxxxxxxxx"
-                billingName="West African Book Publishers ltd"
-                ActivityIndicatorColor="green"
-                SafeAreaViewContainer={{ marginTop: 15 }}
-                SafeAreaViewContainerModal={{ marginTop: 15 }}
-                onCancel={(e) => {
-                  // handle response here
-                }}
-                onSuccess={(e) => {
-                  // post storage to database and redirect
-                  this._getCart();
-                }}
-                autoStart={false}
-                refNumber={
-                  "wabpLtd" + Math.floor(Math.random() * 1000000000 + 1)
-                }
-              />
-            </View>
-          </View>
-        ) : (
-          <View style={[styles.content, styles.emptyCart]}>
-            <Foundation
-              name="book-bookmark"
-              size={250}
-              color={Colors.blueViolet}
+  return (
+    <View style={styles.container}>
+      {cartCtx.items.length > 0 && (
+        <View style={styles.content}>
+          {/* <CartTotal totalCost={cartState.totalAmount} /> */}
+          <View style={{ padding: 20 }}>
+            <FlatList
+              data={cartCtx.items}
+              keyExtractor={_keyExtractor}
+              renderItem={_renderItem}
+              scrollEventThrottle={16}
             />
-            <Text style={styles.emptyCartText}>
-              Your cart is currently empty
-            </Text>
-            <Text style={styles.emptyCartAdd}>
-              Add a few items to your cart to checkout
-            </Text>
+            <CartTotal totalCost={cartCtx.totalAmount} />
           </View>
-        )}
-      </View>
-    );
-  }
-}
+
+          <View style={styles.cartFooter}>
+            <Paystack
+              paystackKey="pk_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              amount={cartCtx.totalAmount.toFixed(2)}
+              billingEmail="xxxxxxxxxxxxx"
+              billingMobile="xxxxxxxxxx"
+              billingName="West African Book Publishers ltd"
+              activityIndicatorColor="green"
+              channels={JSON.stringify(["card", "bank", "ussd"])}
+              onCancel={(e) => {
+                // handle response here
+              }}
+              onSuccess={(res) => {
+                // handle response here
+                _postCartToDB();
+              }}
+              autoStart={false}
+              ref={paystackWebViewRef}
+              refNumber={"wabpLtd" + Math.floor(Math.random() * 1000000000 + 1)}
+            />
+            <TouchableOpacity
+              onPress={() => paystackWebViewRef.current.startTransaction()}
+            >
+              <Text>Pay Now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+      {!cartCtx.items.length > 0 && (
+        <View style={[styles.content, styles.emptyCart]}>
+          <Foundation
+            name="book-bookmark"
+            size={250}
+            color={Colors.blueViolet}
+          />
+          <Text style={styles.emptyCartText}>Your cart is currently empty</Text>
+          <Text style={styles.emptyCartAdd}>
+            Add a few items to your cart to checkout
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -329,3 +266,30 @@ const styles = StyleSheet.create({
     color: Colors.congoBrown,
   },
 });
+
+export default CartScreen;
+
+{
+  /* <View style={styles.cartFooter}>
+                <PaystackWebView
+                  buttonText="Pay Now"
+                  showPayButton={true}
+                  paystackKey="pk_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  amount={cartState.totalAmount}
+                  billingEmail="xxxxxxxxxxxxx"
+                  billingMobile="xxxxxxxxxx"
+                  billingName="West African Book Publishers ltd"
+                  ActivityIndicatorColor="green"
+                  SafeAreaViewContainer={{ marginTop: 15 }}
+                  SafeAreaViewContainerModal={{ marginTop: 15 }}
+                  onCancel={(e) => {console.log('cancelled')}}
+                  onSuccess={(e) => {
+                    _postCartToDB();
+                  }}
+                  autoStart={false}
+                  refNumber={
+                    "wabpLtd" + Math.floor(Math.random() * 1000000000 + 1)
+                  }
+                />
+              </View> */
+}

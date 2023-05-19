@@ -1,6 +1,6 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { Colors, Layout, Touchable } from "../shared";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   ToastAndroid,
   Platform,
@@ -10,25 +10,26 @@ import {
   Text,
   View,
   Image,
-  AsyncStorage,
-  TextInput,
-  Pressable,
+  TouchableOpacity,
 } from "react-native";
-
-import { AdditionalInfo, AddReview } from "../components";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AdditionalInfo, AddReview, CartNumItems } from "../components";
+import CartContext from "../store/cart-context";
 
 const SCREEN_WIDTH = Layout.window.width;
 const BOOK_WIDTH = (SCREEN_WIDTH - 50) * 0.4;
 
 const DetailScreen = (props) => {
-  const [qty, setQty] = useState(1);
+  const [qtys, setQty] = useState(1);
   const [submittedRating, setSubmittedRating] = useState(0);
   const [submittedComment, setSubmittedComment] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [reviewModalVisible, setReviewModalVisibile] = useState(false);
   const [reviewData, setReviewData] = useState([]);
   const { navigation, route } = props;
-  //const [title, setTitle] = React.useState(route.params.title);
+  //const [title, setTitle] = React.useState(route.params.title)
+
+  const cartCtx = useContext(CartContext);
 
   useEffect(() => {
     navigation.setOptions({
@@ -58,7 +59,9 @@ const DetailScreen = (props) => {
             }}
           >
             <Feather name="shopping-cart" size={20} color={Colors.congoBrown} />
-            <View style={styles.cartHasItems}></View>
+            <View style={styles.cartHasItems}>
+              <CartNumItems />
+            </View>
           </View>
         </Touchable>
       ),
@@ -69,7 +72,7 @@ const DetailScreen = (props) => {
     _getReviews();
   }, []);
 
-  _getReviews = () => {
+  const _getReviews = () => {
     var id = route.params.id;
 
     const url = `https://books.timotech.com.ng/api/books/getreviews?BookId=${id}`;
@@ -91,12 +94,12 @@ const DetailScreen = (props) => {
       );
   };
 
-  _setReviewData = (value) => {
+  const _setReviewData = (value) => {
     setReviewData(value);
     _getReviews();
   };
 
-  _setReviewModalVisible = (visible) => {
+  const _setReviewModalVisible = (visible) => {
     setReviewModalVisibile(visible);
   };
 
@@ -107,36 +110,34 @@ const DetailScreen = (props) => {
     }, 1500);
   };
 
-  _incrementQty = () => {
-    const qty = `${+qty + 1}`;
-    setQty(qty);
+  const _incrementQty = () => {
+    setQty((qty) => qty + 1);
   };
 
-  _decreaseQty = () => {
-    const prevQty = +qty;
+  const _decreaseQty = () => {
+    const prevQty = qtys;
     if (prevQty > 1) {
-      const qty = `${prevQty - 1}`;
-      setQty(qty);
+      setQty((prevQty) => prevQty - 1);
     }
   };
 
-  _handleQtyChanged = (value) => {
+  const _handleQtyChanged = (value) => {
     let qty = +value;
     if (qty >= 0) {
-      qty = `${qty}`;
       setQty(qty);
     }
   };
 
-  _addToCart = async (data) => {
+  const _addToCart = async (data) => {
     const logged = await AsyncStorage.getItem("authtoken");
     if (!logged) {
       return navigation.navigate("Auth");
     }
 
     const itemcart = {
+      id: data.id,
       book: data,
-      quantity: qty,
+      quantity: qtys,
       price: data.price,
     };
 
@@ -146,7 +147,7 @@ const DetailScreen = (props) => {
     if (allCollections !== null) {
       var allColls = JSON.parse(allCollections);
       var itemExists = allColls.filter(
-        (item) => item.title == itemcart.book.title
+        (item) => item.title === itemcart.book.title
       );
 
       if (itemExists.length !== 0) {
@@ -155,29 +156,32 @@ const DetailScreen = (props) => {
       }
     }
 
-    const qty = +qty;
+    const qty = qtys;
     if (qty < 1) {
       alert(`You cannot add ${qty} quantity of this item`);
-      return false;
+      return;
     }
 
-    AsyncStorage.getItem("cart")
-      .then((datacart) => {
-        if (datacart !== null) {
-          // We have data!!
-          const cart = JSON.parse(datacart);
-          cart.push(itemcart);
-          AsyncStorage.setItem("cart", JSON.stringify(cart));
-        } else {
-          const cart = [];
-          cart.push(itemcart);
-          AsyncStorage.setItem("cart", JSON.stringify(cart));
-        }
-        alert("Book Added To Cart");
-      })
-      .catch((err) => {
-        alert(err);
-      });
+    cartCtx.addItem(itemcart);
+    alert("Book Added To Cart");
+    // AsyncStorage.getItem("cart")
+    //   .then((datacart) => {
+    //     if (datacart !== null) {
+    //       // We have data!!
+    //       const cart = JSON.parse(datacart);
+    //       cart.push(itemcart);
+    //       AsyncStorage.setItem("cart", JSON.stringify(cart));
+    //     } else {
+    //       const cart = [];
+    //       cart.push(itemcart);
+    //       console.log(cart);
+    //       AsyncStorage.setItem("cart", JSON.stringify(cart));
+    //     }
+    //     alert("Book Added To Cart");
+    //   })
+    //   .catch((err) => {
+    //     alert(err);
+    //   });
   };
 
   return (
@@ -232,7 +236,7 @@ const DetailScreen = (props) => {
                 >
                   N{route.params.price}
                 </Text>
-                {route.params.specialPrice != 0 && (
+                {route.params.specialPrice !== 0 && (
                   <Text style={[styles.price, styles.newPrice]}>
                     N{route.params.specialPrice}
                   </Text>
@@ -260,27 +264,34 @@ const DetailScreen = (props) => {
 
       <View style={styles.buyActions}>
         <View style={styles.buyQty}>
-          <Pressable style={styles.buyQtyPlusMinusBtn} onPress={_decreaseQty}>
+          <TouchableOpacity
+            style={styles.buyQtyPlusMinusBtn}
+            onPress={_decreaseQty}
+          >
             <Feather name="minus" size={20} color={Colors.titanWhite} />
-          </Pressable>
+          </TouchableOpacity>
           <View style={styles.buyQtyInputContainer}>
-            <TextInput
-              value={qty}
+            {/* <TextInput
+              value={qtys}
               keyboardType="numeric"
               onChangeText={(value) => _handleQtyChanged(value)}
               style={styles.buyQtyInput}
-            />
+            /> */}
+            <Text style={styles.buyQtyInput}>{qtys}</Text>
           </View>
-          <Pressable style={styles.buyQtyPlusMinusBtn} onPress={_incrementQty}>
+          <TouchableOpacity
+            style={styles.buyQtyPlusMinusBtn}
+            onPress={_incrementQty}
+          >
             <Feather name="plus" size={20} color={Colors.titanWhite} />
-          </Pressable>
+          </TouchableOpacity>
         </View>
-        <Pressable
+        <TouchableOpacity
           style={styles.buyBtn}
           onPress={() => _addToCart(route.params)}
         >
           <Text style={styles.buyActionsText}>Buy Now</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
 
       {/** Review Form */}
